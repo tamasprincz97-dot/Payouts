@@ -1,0 +1,5 @@
+root = true
+
+[*.cs]
+# Forward the CancellationToken a method already has.
+dotnet_diagnostic.CA2016.severity = warning
