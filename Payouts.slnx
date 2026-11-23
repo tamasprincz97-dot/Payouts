@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Payouts.Shared/Payouts.Shared.csproj" />
+    <Project Path="src/Payouts.Accounts/Payouts.Accounts.csproj" />
   </Folder>
 </Solution>
