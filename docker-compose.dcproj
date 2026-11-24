@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <ProjectGuid>{9c6f1683-95fa-4daf-a399-feee68672fbd}</ProjectGuid>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerComposeBaseFilePath>compose</DockerComposeBaseFilePath>
+    <DockerComposeProjectName>saga-payout-wolverine</DockerComposeProjectName>
+    <DockerDevelopmentMode>Regular</DockerDevelopmentMode>
+    <DependencyAwareStart>true</DependencyAwareStart>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+    <DockerServiceName>transfers</DockerServiceName>
+    <DockerServiceUrl>http://localhost:{ServicePort}/health</DockerServiceUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="compose.yml" />
+    <None Include="src/Payouts.Transfers/Dockerfile" />
+    <None Include="src/Payouts.Accounts/Dockerfile" />
+    <None Include="src/Payouts.Payments/Dockerfile" />
+    <None Include=".dockerignore" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,112 @@
+name: saga-payout-wolverine
+
+x-app: &app
+  restart: on-failure
+
+x-app-environment: &app-environment
+  Logging__Console__FormatterName: json
+  Logging__Console__FormatterOptions__IncludeScopes: "true"
+  Logging__LogLevel__Microsoft.AspNetCore: Warning
+  Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
+  RabbitMq__Host: rabbitmq
+  RabbitMq__User: saga_demo
+  RabbitMq__Password: saga_demo_local
+  RabbitMq__VirtualHost: /
+
+# One database server per service.
+x-postgres: &postgres
+  image: postgres:17.11-alpine
+  environment:
+    POSTGRES_USER: saga_demo
+    POSTGRES_PASSWORD: saga_demo_local
+    POSTGRES_DB: saga
+    POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U saga_demo -d saga"]
+    interval: 2s
+    timeout: 5s
+    retries: 30
+
+services:
+  transfers-db:
+    <<: *postgres
+    volumes:
+      - transfers-pgdata:/var/lib/postgresql/data
+
+  accounts-db:
+    <<: *postgres
+    volumes:
+      - accounts-pgdata:/var/lib/postgresql/data
+
+  payments-db:
+    <<: *postgres
+    volumes:
+      - payments-pgdata:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:4.4-management-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: saga_demo
+      RABBITMQ_DEFAULT_PASS: saga_demo_local
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    ports:
+      - "127.0.0.1:${SAGA_W_RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
+    healthcheck:
+      test: ["CMD", "su-exec", "rabbitmq", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  transfers:
+    <<: *app
+    build:
+      context: .
+      dockerfile: src/Payouts.Transfers/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      transfers-db:
+        condition: service_healthy
+    environment:
+      <<: *app-environment
+      ConnectionStrings__ServiceDb: Host=transfers-db;Database=saga;Username=saga_demo;Password=saga_demo_local
+      SagaTimeouts__AccountsReply: "00:00:10"
+      SagaTimeouts__PaymentsReply: "00:00:15"
+    ports:
+      - "127.0.0.1:${SAGA_W_TRANSFERS_PORT:-5180}:8080"
+
+  accounts:
+    <<: *app
+    build:
+      context: .
+      dockerfile: src/Payouts.Accounts/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      accounts-db:
+        condition: service_healthy
+    environment:
+      <<: *app-environment
+      ConnectionStrings__ServiceDb: Host=accounts-db;Database=saga;Username=saga_demo;Password=saga_demo_local
+
+  payments:
+    <<: *app
+    build:
+      context: .
+      dockerfile: src/Payouts.Payments/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      payments-db:
+        condition: service_healthy
+    environment:
+      <<: *app-environment
+      ConnectionStrings__ServiceDb: Host=payments-db;Database=saga;Username=saga_demo;Password=saga_demo_local
+
+volumes:
+  transfers-pgdata:
+  accounts-pgdata:
+  payments-pgdata:
+  rabbitdata:

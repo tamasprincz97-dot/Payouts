@@ -1,9 +1,10 @@
 <Solution>
+  <Project Path="docker-compose.dcproj" />
   <Folder Name="/src/">
     <Project Path="src/Payouts.Shared/Payouts.Shared.csproj" />
+    <Project Path="src/Payouts.Transfers/Payouts.Transfers.csproj" />
     <Project Path="src/Payouts.Accounts/Payouts.Accounts.csproj" />
     <Project Path="src/Payouts.Payments/Payouts.Payments.csproj" />
-    <Project Path="src/Payouts.Transfers/Payouts.Transfers.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Payouts.Tests/Payouts.Tests.csproj" />
