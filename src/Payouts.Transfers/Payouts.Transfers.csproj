@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../Payouts.Shared/Payouts.Shared.csproj" />
+    <PackageReference Include="Stateless" />
+  </ItemGroup>
+</Project>
