@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/Payouts.Transfers/Payouts.Transfers.csproj" />
+    <ProjectReference Include="../../src/Payouts.Accounts/Payouts.Accounts.csproj" />
+    <ProjectReference Include="../../src/Payouts.Payments/Payouts.Payments.csproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+</Project>
