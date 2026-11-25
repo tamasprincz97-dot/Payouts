@@ -51,6 +51,18 @@ public sealed class TransferTests
     }
 
     [Fact]
+    public void Reservation_timeout_releases_funds()
+    {
+        var (transfer, _) = NewTransfer();
+
+        // The reserve may have gone through even though its reply was lost.
+        Assert.Equal(new ReleaseFunds(transfer.Id), transfer.Apply(transfer.CurrentTimeout(Timeouts), Now, Timeouts));
+        transfer.Apply(new FundsReleased(transfer.Id), Now, Timeouts);
+
+        Assert.Equal((TransferState.Failed, TransferFailureReason.ReservationTimedOut), (transfer.State, transfer.FailureReason));
+    }
+
+    [Fact]
     public void Payment_timeout_cancels_before_releasing_funds()
     {
         var (transfer, _) = NewTransfer();

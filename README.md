@@ -62,9 +62,13 @@ through even though its reply was lost. A late or duplicate reply that no longer
 
 ## Run it
 
+Needs Docker. The tests also need the .NET 10 SDK or newer.
+
 ```bash
 docker compose up --build --wait
 ```
+
+Balances and transfers live in named volumes, so they survive a restart. `docker compose down -v` resets them.
 
 Or open `Payouts.slnx` in Visual Studio and start the `docker-compose` project.
 
@@ -84,7 +88,7 @@ The ID is chosen by the caller and must not be all zeros. The amount must be in 
 |---|---|
 | `DEMOAPPROVE` | `Completed` with a `SIM-…` bank reference |
 | `DEMOREJECT` | `Failed`, `BeneficiaryRejected`, funds released |
-| `DEMOTIMEOUT` | `Failed`, `PaymentCancelled` after ~15 s |
+| `DEMOTIMEOUT` | `Failed`, `PaymentCancelled` after ~15 s (`SagaTimeouts:PaymentsReply`) |
 | account `…0002` (EUR 50), amount 60 | `Failed`, `InsufficientFunds` |
 
 Sending the same request again returns 200, even when both requests arrive at once. Reusing the same ID with a
@@ -108,9 +112,17 @@ dotnet test --solution Payouts.slnx
 ```
 
 The journey and participant tests start PostgreSQL and RabbitMQ with Testcontainers, so they need Docker. The state
-machine tests (`TransferTests`) don't.
+machine tests don't:
+
+```bash
+dotnet test --solution Payouts.slnx -- --filter-class Payouts.Tests.TransferTests
+```
 
 ## Not covered
 
 This is a demo. There's no auth, the schema is created with `EnsureCreated` rather than migrations, each service runs
 as a single instance, and the bank is just a database table.
+
+A message that still fails after three retries goes to its `*-error` queue, which you can see in the RabbitMQ UI. A
+saga step that times out is resent forever; after five attempts each resend also logs a "stuck" error. There is no
+alerting.

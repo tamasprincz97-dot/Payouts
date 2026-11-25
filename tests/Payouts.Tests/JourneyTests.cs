@@ -46,6 +46,18 @@ public sealed class JourneyTests(PostgresFixture postgres, RabbitFixture rabbit)
     }
 
     [Fact]
+    public async Task Unanswered_payment_is_cancelled_and_releases_the_funds()
+    {
+        var (transfers, accountsDb, apps) = await StartAsync();
+        await using var _ = apps;
+
+        var transfer = await RunTransferAsync(transfers, AccountsDbContext.PoorAccount, "DEMOTIMEOUT");
+
+        Assert.Equal(("Failed", "PaymentCancelled"), (transfer.Outcome, transfer.FailureReason));
+        Assert.Equal(50m, await AvailableAsync(accountsDb, AccountsDbContext.PoorAccount));
+    }
+
+    [Fact]
     public async Task Invalid_requests_are_rejected_without_side_effects()
     {
         var (transfers, accountsDb, apps) = await StartAsync();
@@ -115,7 +127,7 @@ public sealed class JourneyTests(PostgresFixture postgres, RabbitFixture rabbit)
         {
             Configure(b, transfersDb, vhost);
             b.Configuration["SagaTimeouts:AccountsReply"] = "00:00:10";
-            b.Configuration["SagaTimeouts:PaymentsReply"] = "00:00:15";
+            b.Configuration["SagaTimeouts:PaymentsReply"] = "00:00:03";
         });
         await transfers.EnsureServiceSchemaAsync<TransfersDbContext>(Ct);
 
