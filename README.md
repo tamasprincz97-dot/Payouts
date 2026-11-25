@@ -74,8 +74,11 @@ Send a transfer from the seeded account `…0001` (EUR 1,000), then poll the `Lo
 $body = @{ id = [guid]::NewGuid(); sourceAccountId = '00000000-0000-0000-0000-000000000001'
            beneficiary = 'DEMOAPPROVE'; amount = 12.34; currency = 'EUR' } | ConvertTo-Json
 $created = Invoke-WebRequest http://127.0.0.1:5180/transfers -Method Post -ContentType application/json -Body $body -UseBasicParsing
-Invoke-RestMethod "http://127.0.0.1:5180$($created.Headers.Location)"
+do { Start-Sleep 1; $t = Invoke-RestMethod "http://127.0.0.1:5180$($created.Headers.Location)" } while ($t.outcome -eq 'Pending')
+$t
 ```
+
+The ID is chosen by the caller and must not be all zeros. The amount must be in whole cents.
 
 | Request | Result |
 |---|---|
@@ -84,7 +87,8 @@ Invoke-RestMethod "http://127.0.0.1:5180$($created.Headers.Location)"
 | `DEMOTIMEOUT` | `Failed`, `PaymentCancelled` after ~15 s |
 | account `…0002` (EUR 50), amount 60 | `Failed`, `InsufficientFunds` |
 
-Sending the same request again returns 200. Reusing the same ID with a different request returns 409. RabbitMQ
+Sending the same request again returns 200, even when both requests arrive at once. Reusing the same ID with a
+different request returns 409. RabbitMQ
 management is at http://127.0.0.1:15673 (`saga_demo` / `saga_demo_local`).
 
 ## Code
@@ -95,7 +99,7 @@ management is at http://127.0.0.1:15673 (`saga_demo` / `saga_demo_local`).
 | `src/Payouts.Transfers` | `Transfer.cs` (saga), `TransferStateMachine.cs`, `TransfersApp.cs` (API) |
 | `src/Payouts.Accounts` | `FundsHandler.cs`: reserve, release and settle, all idempotent per transfer |
 | `src/Payouts.Payments` | `PaymentHandler.cs`: write-once bank decision |
-| `tests/Payouts.Tests` | Tests for the state machine, the participants and two full journeys |
+| `tests/Payouts.Tests` | Tests for the state machine, the participants and the full stack |
 
 ## Tests
 
